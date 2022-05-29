@@ -47,6 +47,8 @@ export class CubeComponent implements OnInit, AfterViewInit {
   private orbitControls!: CONTROLS.OrbitControls;
   private machineArray:Array<any> = []; //array to hold machine positions from backend
   private machineObjects: Array<THREE.Points> = [];
+  private curveObjects: Array<THREE.Line> = [];
+  private splineCurves: Array<THREE.SplineCurve> = [];
   
 
   private get canvas(): HTMLCanvasElement {
@@ -148,14 +150,30 @@ export class CubeComponent implements OnInit, AfterViewInit {
         //this.scene.remove(this.machineObjects[i]);
           this.machineObjects[i].geometry.attributes.position = new THREE.BufferAttribute(new Float32Array([this.machineArray[i]['posx'], this.machineArray[i]['posy'],2]), 3);
           this.scene.getObjectByName(this.machineObjects[i].name)?.matrixAutoUpdate;
+          
+          //add latest position to route
+          this.splineCurves[i].points.push(new THREE.Vector2(this.machineArray[i]['posx'], this.machineArray[i]['posy']));
+          const geometry = new THREE.BufferGeometry().setFromPoints( this.splineCurves[i].getPoints(20));
+          const material = new THREE.LineBasicMaterial( { color: 0x00ff00 } );          
+          const splineObject = new THREE.Line( geometry, material );  
+          this.scene.remove(this.curveObjects[i]);        
+          this.curveObjects[i] = splineObject;
+          this.scene.add(splineObject);
         }
       //this.machineObjects = [];      
       this.renderer.render(this.scene, this.camera);  
-         return;          
+      return;          
     }
     
     if(this.machineArray.length == 0) return;
+    this.buildManageMachineDotObjects();
+    this.buildManageRouteCurveObjects();      
+   
+  }
+
+  private buildManageMachineDotObjects(){
     this.machineArray.forEach(machine => {
+      //adding dots where cars would be
       const dotGeometry = new THREE.BufferGeometry();
       dotGeometry.setAttribute('position', new THREE.BufferAttribute(new Float32Array([machine['posx'], machine['posy'],2]), 3));
       const dotMaterial = new THREE.PointsMaterial({ size: 10, color: 0xff0000 });
@@ -163,9 +181,25 @@ export class CubeComponent implements OnInit, AfterViewInit {
       dot.name = machine['vin'];
       this.machineObjects.push(dot);
       this.scene.add(dot); 
-      dot.geometry.attributes.position.needsUpdate = true;          
-    });
-   
+      dot.geometry.attributes.position.needsUpdate = true; });
+
+  }
+  private buildManageRouteCurveObjects(){
+    this.machineArray.forEach(machine => {
+      //adding curve to trace the route of the car
+    const splineCurve = new THREE.SplineCurve([new THREE.Vector2(machine['posx'], machine['posy'])]);
+    const points = splineCurve.getPoints( 50 );
+    this.splineCurves.push(splineCurve);
+    const geometry = new THREE.BufferGeometry().setFromPoints( points );
+    const material = new THREE.LineBasicMaterial( { color: 0x00ff00 } );
+    // Create the final object to add to the scene
+    const splineObject = new THREE.Line( geometry, material );
+    splineObject.name = "route" + machine['vin'];
+    this.curveObjects.push(splineObject);
+    this.scene.add(splineObject);   
+
+    });    
+    
   }
 
   private getAspectRatio() {
@@ -192,8 +226,7 @@ export class CubeComponent implements OnInit, AfterViewInit {
     (function render() {
       requestAnimationFrame(render);
       //component.getMachinePositionsFromServerAndRender(); 
-      component.animate(); 
-           
+      component.animate();            
       component.renderer.render(component.scene, component.camera);
     }());
   }
