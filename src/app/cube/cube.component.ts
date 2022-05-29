@@ -28,7 +28,7 @@ export class CubeComponent implements OnInit, AfterViewInit {
 
   @Input() public size: number = 200;
 
-  @Input() public texture: string = "/assets/texture.jpg";
+  @Input() public texture: string = "/assets/mapImage.jpg";
 
 
   //* Stage Properties
@@ -86,8 +86,9 @@ export class CubeComponent implements OnInit, AfterViewInit {
     this.scene = new THREE.Scene();
     this.scene.background = new THREE.Color(0x000000)
     //this.scene.add(this.cube);
-    const geometry = new THREE.PlaneGeometry( 2000, 2000, 10, 10);
-    const material = new THREE.MeshBasicMaterial( {color: 0x0000AF, side: THREE.DoubleSide, wireframe: true, opacity: 0.5 } );
+    const geometry = new THREE.PlaneGeometry( 2000, 2000);
+    const material = new THREE.MeshBasicMaterial({ map: this.loader.load(this.texture) });
+    //new THREE.MeshBasicMaterial( {color: 0x0000AF, side: THREE.DoubleSide, wireframe: true, opacity: 0.5 } );
     const plane = new THREE.Mesh( geometry, material );
     plane.position.x = 300;
     plane.position.y = 300;
@@ -147,27 +148,27 @@ export class CubeComponent implements OnInit, AfterViewInit {
   private addMachinePositions(){
     if(this.machineObjects.length > 0){
       for(var i = 0; i < this.machineObjects.length; i++){
-        //this.scene.remove(this.machineObjects[i]);
+        
           this.machineObjects[i].geometry.attributes.position = new THREE.BufferAttribute(new Float32Array([this.machineArray[i]['posx'], this.machineArray[i]['posy'],2]), 3);
           this.scene.getObjectByName(this.machineObjects[i].name)?.matrixAutoUpdate;
           
           //add latest position to route
-          this.splineCurves[i].points.push(new THREE.Vector2(this.machineArray[i]['posx'], this.machineArray[i]['posy']));
-          const geometry = new THREE.BufferGeometry().setFromPoints( this.splineCurves[i].getPoints(20));
-          const material = new THREE.LineBasicMaterial( { color: 0x00ff00 } );          
-          const splineObject = new THREE.Line( geometry, material );  
-          this.scene.remove(this.curveObjects[i]);        
-          this.curveObjects[i] = splineObject;
-          this.scene.add(splineObject);
+          // this.splineCurves[i].points.push(new THREE.Vector2(this.machineArray[i]['posx'], this.machineArray[i]['posy']));
+          // const geometry = new THREE.BufferGeometry().setFromPoints( this.splineCurves[i].getPoints(20));
+          // const material = new THREE.LineBasicMaterial( { color: 0x00ff00 } );          
+          // const splineObject = new THREE.Line( geometry, material );  
+          // this.scene.remove(this.curveObjects[i]);        
+          // this.curveObjects[i] = splineObject;
+          // this.scene.add(splineObject);
         }
-      //this.machineObjects = [];      
+           
       this.renderer.render(this.scene, this.camera);  
       return;          
     }
     
     if(this.machineArray.length == 0) return;
     this.buildManageMachineDotObjects();
-    this.buildManageRouteCurveObjects();      
+    //this.buildManageRouteCurveObjects();      
    
   }
 
@@ -176,7 +177,7 @@ export class CubeComponent implements OnInit, AfterViewInit {
       //adding dots where cars would be
       const dotGeometry = new THREE.BufferGeometry();
       dotGeometry.setAttribute('position', new THREE.BufferAttribute(new Float32Array([machine['posx'], machine['posy'],2]), 3));
-      const dotMaterial = new THREE.PointsMaterial({ size: 10, color: 0xff0000 });
+      const dotMaterial = new THREE.PointsMaterial({ size: 15, color: 0xff0000 });
       const dot = new THREE.Points(dotGeometry, dotMaterial);
       dot.name = machine['vin'];
       this.machineObjects.push(dot);
